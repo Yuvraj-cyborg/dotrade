@@ -4,6 +4,7 @@ import connectDB from "./utils/db.js";
 import logger from "./middlewares/logger.js";
 import authRoutes from "./routes/auth.js";
 import orderRoutes from "./routes/order.js";
+import tradeRoutes from "./routes/trade.js";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -16,6 +17,7 @@ app.get("/health", (req, res) => res.json({ status: "ok" }));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/trades", tradeRoutes);
 
 connectDB().then(() => {
   app.listen(port, () => console.log(`Server listening on port ${port}`));
