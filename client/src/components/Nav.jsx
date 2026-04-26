@@ -23,10 +23,10 @@ const Nav = () => {
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
-            <div className="grid h-7 w-7 place-items-center rounded-md bg-brand text-white">
-              <LineChart size={16} />
+            <div className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-gray-700 to-gray-900 shadow-sm ring-1 ring-black/10">
+              <img src="/logo.png" alt="Dotrade" className="h-5 w-5 object-contain" />
             </div>
-            <span className="text-sm font-semibold">Trade Engine</span>
+            <span className="text-sm font-semibold">Dotrade</span>
           </div>
 
           <nav className="flex items-center gap-1">

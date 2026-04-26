@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { api, getToken, setToken, clearToken } from "./api.js";
 
 const AuthContext = createContext(null);
@@ -42,13 +42,16 @@ const AuthProvider = ({ children }) => {
   };
 
   const refreshUser = async () => {
-    try {
-      const { user: u } = await api.me();
-      writeUser(u);
-    } catch {
-      // ignore — probably unauthenticated
-    }
+    const { user: u } = await api.me();
+    writeUser(u);
+    return u;
   };
+
+  useEffect(() => {
+    const onExpired = () => setUserState(null);
+    window.addEventListener("auth:expired", onExpired);
+    return () => window.removeEventListener("auth:expired", onExpired);
+  }, []);
 
   const isAuthed = !!user && !!getToken();
 

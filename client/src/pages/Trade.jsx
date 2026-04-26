@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createChart, CandlestickSeries } from "lightweight-charts";
+import { init, dispose } from "klinecharts";
 import { X, TrendingUp } from "lucide-react";
 import Button from "../components/Button.jsx";
 import Input from "../components/Input.jsx";
@@ -9,30 +9,63 @@ import { api } from "../lib/api.js";
 import { useAuth } from "../lib/auth.jsx";
 
 const SYMBOLS = ["BTC", "ETH", "SOL", "AVAX"];
-const BUCKET_SECONDS = 3600;
+const BUCKET_MS = 3600 * 1000;
 const BOOK_POLL_MS = 4000;
 
-const aggregateCandles = (trades, intervalSec = BUCKET_SECONDS) => {
+const aggregateCandles = (trades, intervalMs = BUCKET_MS) => {
   const buckets = new Map();
   for (const t of trades) {
-    const ts = Math.floor(new Date(t.createdAt).getTime() / 1000);
-    const bucket = Math.floor(ts / intervalSec) * intervalSec;
+    const ts = new Date(t.createdAt).getTime();
+    const bucket = Math.floor(ts / intervalMs) * intervalMs;
     const existing = buckets.get(bucket);
     if (!existing) {
       buckets.set(bucket, {
-        time: bucket,
+        timestamp: bucket,
         open: t.price,
         high: t.price,
         low: t.price,
         close: t.price,
+        volume: t.quantity,
       });
     } else {
       existing.high = Math.max(existing.high, t.price);
       existing.low = Math.min(existing.low, t.price);
       existing.close = t.price;
+      existing.volume += t.quantity;
     }
   }
-  return Array.from(buckets.values()).sort((a, b) => a.time - b.time);
+  return Array.from(buckets.values()).sort(
+    (a, b) => a.timestamp - b.timestamp,
+  );
+};
+
+const chartStyles = {
+  grid: {
+    horizontal: { color: "#f3f4f6" },
+    vertical: { color: "#f3f4f6" },
+  },
+  candle: {
+    bar: {
+      upColor: "#17b26a",
+      downColor: "#f04438",
+      upBorderColor: "#17b26a",
+      downBorderColor: "#f04438",
+      upWickColor: "#17b26a",
+      downWickColor: "#f04438",
+    },
+    tooltip: {
+      text: { color: "#111827" },
+    },
+    priceMark: {
+      last: { show: true, line: { show: true } },
+    },
+  },
+  xAxis: { axisLine: { color: "#e5e7eb" }, tickText: { color: "#6b7280" } },
+  yAxis: { axisLine: { color: "#e5e7eb" }, tickText: { color: "#6b7280" } },
+  crosshair: {
+    horizontal: { line: { color: "#9ca3af" } },
+    vertical: { line: { color: "#9ca3af" } },
+  },
 };
 
 const statusStyles = {
@@ -57,7 +90,6 @@ const Trade = () => {
   const [notice, setNotice] = useState("");
 
   const chartRef = useRef(null);
-  const seriesRef = useRef(null);
   const containerRef = useRef(null);
 
   const candles = useMemo(() => aggregateCandles(trades), [trades]);
@@ -98,52 +130,23 @@ const Trade = () => {
   }, [symbol]);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    const el = containerRef.current;
+    if (!el) return;
 
-    const chart = createChart(containerRef.current, {
-      layout: {
-        background: { color: "#ffffff" },
-        textColor: "#6b7280",
-        fontFamily: "Inter, system-ui, sans-serif",
-      },
-      grid: {
-        vertLines: { color: "#f3f4f6" },
-        horzLines: { color: "#f3f4f6" },
-      },
-      rightPriceScale: { borderColor: "#e5e7eb" },
-      timeScale: { borderColor: "#e5e7eb", timeVisible: true },
-      width: containerRef.current.clientWidth,
-      height: 380,
-    });
-
-    const series = chart.addSeries(CandlestickSeries, {
-      upColor: "#17b26a",
-      downColor: "#f04438",
-      borderVisible: false,
-      wickUpColor: "#17b26a",
-      wickDownColor: "#f04438",
-    });
-
+    const chart = init(el);
+    chart.setStyles(chartStyles);
+    chart.setPriceVolumePrecision(2, 4);
     chartRef.current = chart;
-    seriesRef.current = series;
-
-    const handleResize = () => {
-      chart.applyOptions({ width: containerRef.current.clientWidth });
-    };
-    window.addEventListener("resize", handleResize);
 
     return () => {
-      window.removeEventListener("resize", handleResize);
-      chart.remove();
+      dispose(el);
       chartRef.current = null;
-      seriesRef.current = null;
     };
   }, []);
 
   useEffect(() => {
-    if (!seriesRef.current) return;
-    seriesRef.current.setData(candles);
-    if (candles.length > 0) chartRef.current?.timeScale().fitContent();
+    if (!chartRef.current) return;
+    chartRef.current.applyNewData(candles);
   }, [candles]);
 
   const myOpenForSymbol = orders.filter(
@@ -282,9 +285,9 @@ const Trade = () => {
           }
         >
           <div className="relative">
-            <div ref={containerRef} className="w-full" />
+            <div ref={containerRef} className="h-[380px] w-full" />
             {!loadingChart && candles.length === 0 && (
-              <div className="absolute inset-0 grid place-items-center">
+              <div className="pointer-events-none absolute inset-0 grid place-items-center bg-white/70">
                 <p className="text-sm text-muted">
                   No trades yet for {symbol}.
                 </p>

@@ -32,8 +32,8 @@ const Signup = () => {
     <div className="min-h-screen grid place-items-center px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center">
-          <div className="grid h-10 w-10 place-items-center rounded-xl bg-brand text-white">
-            <LineChart size={20} />
+          <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-gray-700 to-gray-900 text-white shadow-sm ring-1 ring-black/10">
+          <img src="/logo.png" alt="Dotrade" className="h-5 w-5 object-contain" />
           </div>
           <h1 className="mt-4 text-2xl font-semibold tracking-tight">
             Create your account

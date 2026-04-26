@@ -1,23 +1,46 @@
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 const TOKEN_KEY = "trade-engine-token";
+const USER_KEY = "trade-engine-user";
 
 const getToken = () => localStorage.getItem(TOKEN_KEY);
 const setToken = (token) => localStorage.setItem(TOKEN_KEY, token);
 const clearToken = () => localStorage.removeItem(TOKEN_KEY);
+
+class ApiError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.status = status;
+  }
+}
 
 const request = async (path, { method = "GET", body } = {}) => {
   const headers = { "Content-Type": "application/json" };
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${BASE_URL}${path}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  let res;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    throw new ApiError("Can't reach server — is the backend running?", 0);
+  }
 
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.message || "Request failed");
+
+  if (res.status === 401) {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    window.dispatchEvent(new CustomEvent("auth:expired"));
+    throw new ApiError(data.message || "Session expired — please log in again", 401);
+  }
+
+  if (!res.ok) {
+    throw new ApiError(data.message || "Request failed", res.status);
+  }
   return data;
 };
 
@@ -34,4 +57,4 @@ const api = {
     request(`/api/trades${symbol ? `?symbol=${encodeURIComponent(symbol)}` : ""}`),
 };
 
-export { api, getToken, setToken, clearToken };
+export { api, getToken, setToken, clearToken, ApiError };

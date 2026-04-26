@@ -59,7 +59,7 @@ const Dashboard = () => {
             Hey, {user?.name?.split(" ")[0]}
           </h1>
           <p className="mt-1 text-sm text-muted">
-            Your simulated trading account. Everyone starts with $500.
+            Your simulated trading account.
           </p>
         </div>
         <Link to="/trade">
@@ -74,7 +74,6 @@ const Dashboard = () => {
           icon={Wallet}
           label="Cash balance"
           value={`$${cash.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
-          hint="Starts at $500 — no top-ups"
         />
         <Stat
           icon={Coins}
@@ -116,7 +115,7 @@ const Dashboard = () => {
 
       <Card
         title="Recent orders"
-        description="Your latest 10 orders across all symbols"
+        description="Your latest 10 orders"
         actions={
           <Link to="/trade" className="text-xs font-medium text-brand hover:underline">
             View trade page
